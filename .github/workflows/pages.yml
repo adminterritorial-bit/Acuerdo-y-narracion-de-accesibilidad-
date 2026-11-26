@@ -27,6 +27,7 @@ jobs:
         run: |
           test -s index.html
           test -s app.js
+          test -s guide.js
           test -s pages.js
           grep -q 'lang="es-CO"' index.html
           grep -q 'id="lengua-senas"' index.html
@@ -34,6 +35,8 @@ jobs:
           grep -q 'id="userVideo"' index.html
           grep -q 'id="voicePicker"' index.html
           grep -q 'id="documento"' index.html
+          grep -q 'id="recursos"' index.html
+          grep -q 'id="guideToggle"' index.html
           grep -q 'window.ACUERDO_PAGES=' pages.js
           if grep -E 'audio_completo_preliminar|audios/pagina_[0-9]+' index.html; then
             echo "No se debe publicar el audio robótico anterior"
@@ -41,6 +44,7 @@ jobs:
           fi
           python3 scripts/check_accessibility.py
           node --check app.js
+          node --check guide.js
           node --check pages.js
           mkdir -p _site
           rsync -a --exclude='.git' --exclude='_site' --exclude='*.zip' --exclude='*.md' --exclude='.github' ./ _site/
