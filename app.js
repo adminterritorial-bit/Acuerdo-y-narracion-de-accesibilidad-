@@ -118,5 +118,19 @@ fetch("media/video-igualdad-equidad.vtt",{method:"HEAD"}).then(r=>{
  $("captionsAvailable").hidden=false;$("captionsMissing").hidden=true;
 }).catch(()=>{$("captionsAvailable").hidden=true;$("captionsMissing").hidden=false;});
 const intro=$("localSignVideo");if(intro)fetch("media/lsc/00-bienvenida.mp4",{method:"HEAD"}).then(r=>{if(r.ok)intro.hidden=false;}).catch(()=>{});
+const lscModules=[
+["01-presentacion","Presentación del acuerdo"],["02-enfoques","Enfoques de derechos"],["03-objetivos","Objetivos y principios"],["04-ejes","Cinco ejes estratégicos"],["05-plan-publico","Transformación de lo público"],["06-garantias","Garantías y participación"],["07-capacidad","Desarrollo de capacidades"],["08-diversidad","Diversidad y no discriminación"],["09-disposiciones","Disposiciones finales"],["10-constancias","Constancias y comunicaciones"]
+];
+for(const [file,title] of lscModules){
+ fetch("media/lsc/"+file+".mp4",{method:"HEAD"}).then(r=>{if(!r.ok)return;
+ const panel=$("lscPublished"),list=$("lscList");if(!panel||!list)return;
+ panel.hidden=false;
+ const card=document.createElement("article");card.className="topic";
+ const h=document.createElement("h4");h.textContent=title;card.append(h);
+ const v=document.createElement("video");v.controls=true;v.preload="none";v.playsInline=true;
+ v.src="media/lsc/"+file+".mp4";v.setAttribute("aria-label","Interpretación en Lengua de Señas Colombiana: "+title);card.append(v);
+ const p=document.createElement("p");p.className="note";p.textContent="Contenido interpretado del acuerdo municipal. Verifica la versión publicada con la entidad.";card.append(p);list.append(card);
+ }).catch(()=>{});
+}
 window.addEventListener("pagehide",()=>{if(synth)synth.cancel();});
 if(synth){updateVoices();if(typeof synth.addEventListener==="function")synth.addEventListener("voiceschanged",updateVoices);else synth.onvoiceschanged=updateVoices;}
