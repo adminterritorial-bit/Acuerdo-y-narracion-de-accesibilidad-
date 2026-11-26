@@ -8,7 +8,7 @@ let foundVoices=[], textSize=1, speechParts=[], partIndex=0, speechVersion=0, sp
 function sayStatus(message){const el=$("voiceStatus");if(el)el.textContent=message;}
 function stopSpeech(){speechVersion++;speaking=false;speechParts=[];partIndex=0;if(synth)synth.cancel();sayStatus("Lectura detenida.");}
 function voiceScore(v){const s=(v.lang||"").toLowerCase(),n=(v.name||"").toLowerCase();
- return (n.includes("google")?0:100)+(s==="es-co"?0:s==="es-mx"?1:s==="es-419"?2:s==="es-us"?3:10);
+ return (latam.test(v.lang)?0:1000)+(n.includes("google")?0:100)+(s==="es-co"?0:s==="es-mx"?1:s==="es-419"?2:s==="es-us"?3:10);
 }
 function updateVoices(){
  if(!synth){sayStatus("Este navegador no admite lectura automática. Usa el audio explicativo o tu lector de pantalla.");return;}
@@ -91,9 +91,9 @@ function selectChapter(){
  renderPages(ch.p);const e=$("readLabel");if(e)e.textContent=ch.name+". "+ch.p.length+" páginas del documento."; }
 $("chapterSelect")?.addEventListener("change",selectChapter);
 $("findText")?.addEventListener("input",event=>{
- const q=event.target.value.trim().toLocaleLowerCase("es-CO");
+ const normalize=s=>s.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"");const q=normalize(event.target.value.trim());
  if(q.length<2){selectChapter();return;}
- const matches=pages.filter(p=>p.t.toLocaleLowerCase("es-CO").includes(q)||String(p.n)===q).map(p=>p.n);
+ const matches=pages.filter(p=>normalize(p.t).includes(q)||String(p.n)===q).map(p=>p.n);
  renderPages(matches);const status=$("readLabel");if(status)status.textContent=matches.length+" páginas contienen la búsqueda: "+q;
 });
 $("readSelected")?.addEventListener("click",()=>{
@@ -112,7 +112,11 @@ function showFile(url,readyId,missingId){
 showFile("media/audio-explicativo.mp3","audioReady","audioMissing");
 showFile("media/video-igualdad-equidad.mp4","videoReady","videoMissing");
 showFile("media/acuerdo-original.pdf","pdfReady","pdfMissing");
-showFile("media/video-igualdad-equidad.vtt","captionsAvailable","captionsMissing");
+fetch("media/video-igualdad-equidad.vtt",{method:"HEAD"}).then(r=>{
+ if(!r.ok)throw Error("Sin subtítulos");
+ const track=document.createElement("track");track.kind="captions";track.label="Español";track.srclang="es";track.src="media/video-igualdad-equidad.vtt";$("userVideo").append(track);
+ $("captionsAvailable").hidden=false;$("captionsMissing").hidden=true;
+}).catch(()=>{$("captionsAvailable").hidden=true;$("captionsMissing").hidden=false;});
 const intro=$("localSignVideo");if(intro)fetch("media/lsc/00-bienvenida.mp4",{method:"HEAD"}).then(r=>{if(r.ok)intro.hidden=false;}).catch(()=>{});
 window.addEventListener("pagehide",()=>{if(synth)synth.cancel();});
 if(synth){updateVoices();if(typeof synth.addEventListener==="function")synth.addEventListener("voiceschanged",updateVoices);else synth.onvoiceschanged=updateVoices;}
