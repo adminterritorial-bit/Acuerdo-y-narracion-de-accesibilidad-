@@ -90,6 +90,9 @@ function selectChapter(){
  const value=$("chapterSelect")?.value||"c1";const ch=chapterRanges.find(x=>x.id===value)||chapterRanges[0];
  renderPages(ch.p);const e=$("readLabel");if(e)e.textContent=ch.name+". "+ch.p.length+" páginas del documento."; }
 $("chapterSelect")?.addEventListener("change",selectChapter);
+document.querySelector('.quick-actions a[href="#buscar-acuerdo"]')?.addEventListener("click",()=>{
+  window.setTimeout(()=>$("findText")?.focus(),60);
+});
 $("findText")?.addEventListener("input",event=>{
  const normalize=s=>s.toLocaleLowerCase("es-CO").normalize("NFD").replace(/[\\u0300-\\u036f]/g,"");const q=normalize(event.target.value.trim());
  if(q.length<2){selectChapter();return;}
