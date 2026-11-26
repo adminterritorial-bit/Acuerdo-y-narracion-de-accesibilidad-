@@ -4,9 +4,9 @@ const $ = id => document.getElementById(id);
 const pages = Array.isArray(window.ACUERDO_PAGES) ? window.ACUERDO_PAGES : [];
 const synth = "speechSynthesis" in window ? window.speechSynthesis : null;
 const latam = /^es-(CO|MX|419|US|AR|CL|PE|EC|VE|CR|PA|UY|PY|DO|GT|HN|SV|NI|BO|CU)$/i;
-let foundVoices=[], textSize=1, speechParts=[], partIndex=0, speechVersion=0, speaking=false;
+let foundVoices=[], textSize=1, speechParts=[], partIndex=0, speechVersion=0, speaking=false, voiceMode="idle";
 function sayStatus(message){const el=$("voiceStatus");if(el)el.textContent=message;}
-function stopSpeech(){speechVersion++;speaking=false;speechParts=[];partIndex=0;if(synth)synth.cancel();sayStatus("Lectura detenida.");}
+function stopSpeech(){speechVersion++;speaking=false;voiceMode="idle";speechParts=[];partIndex=0;if(synth)synth.cancel();sayStatus("Lectura detenida.");}
 function voiceScore(v){const s=(v.lang||"").toLowerCase(),n=(v.name||"").toLowerCase();
  return (latam.test(v.lang)?0:1000)+(n.includes("google")?0:100)+(s==="es-co"?0:s==="es-mx"?1:s==="es-419"?2:s==="es-us"?3:10);
 }
@@ -32,16 +32,16 @@ function chunks(input){
 }
 function advance(version){
  if(!synth||!speaking||version!==speechVersion)return;
- if(partIndex>=speechParts.length){speaking=false;sayStatus("Lectura finalizada.");return;}
+ if(partIndex>=speechParts.length){speaking=false;voiceMode="idle";sayStatus("Lectura finalizada.");return;}
  const voice=chosenVoice();
  const u=new SpeechSynthesisUtterance(speechParts[partIndex++]);if(voice)u.voice=voice;u.lang=voice?voice.lang:"es-CO";u.rate=Number($("speechRate")?.value||1);u.volume=1;u.pitch=1;
  u.onend=()=>advance(version);
  u.onerror=e=>{if(version!==speechVersion||e.error==="canceled"||e.error==="interrupted")return;speaking=false;sayStatus("No se pudo reproducir la voz del navegador. Prueba otra voz o usa el audio explicativo.");};
  try{synth.speak(u);}catch(e){speaking=false;sayStatus("Este dispositivo no pudo iniciar la voz. Usa el audio explicativo.");}
 }
-function speak(text,label){
+function speak(text,label,kind="manual"){
  if(!synth){sayStatus("La síntesis de voz no está disponible en este navegador.");return;}
- stopSpeech();speechParts=chunks(text);partIndex=0;speaking=true;
+ stopSpeech();voiceMode=kind;speechParts=chunks(text);partIndex=0;speaking=true;
  for(const id of ["userAudio","userVideo"]){const media=$(id);if(media&&!media.paused)media.pause();}
  sayStatus("Leyendo: "+label+". "+(chosenVoice()?"Voz seleccionada: "+chosenVoice().name+".":"Se solicitará la voz del sistema en español colombiano; su acento depende del dispositivo."));advance(speechVersion);
 }
@@ -104,10 +104,11 @@ $("readSelected")?.addEventListener("click",()=>{
 $("readPDFAll")?.addEventListener("click",()=>speak(pages.map(p=>"Página "+p.n+". "+p.t).join(". "),"documento completo (transcripción preliminar)"));
 selectChapter();
 function showFile(url,readyId,missingId){
+ // Los reproductores permanecen visibles incluso si una prueba HEAD es bloqueada por el navegador.
  fetch(url,{method:"HEAD",cache:"no-cache"}).then(r=>{
-  if(!r.ok)throw Error("missing");
-  const ready=$(readyId),missing=$(missingId);if(ready)ready.hidden=false;if(missing)missing.hidden=true;
- }).catch(()=>{const ready=$(readyId),missing=$(missingId);if(ready)ready.hidden=true;if(missing)missing.hidden=false;});
+  if(!r.ok)throw Error("Recurso no disponible");
+  const notice=$(missingId);if(notice)notice.hidden=true;
+ }).catch(()=>{const notice=$(missingId);if(notice)notice.hidden=false;});
 }
 showFile("media/audio-explicativo.mp3","audioReady","audioMissing");
 showFile("media/video-igualdad-equidad.mp4","videoReady","videoMissing");
@@ -115,8 +116,8 @@ showFile("media/acuerdo-original.pdf","pdfReady","pdfMissing");
 fetch("media/video-igualdad-equidad.vtt",{method:"HEAD"}).then(r=>{
  if(!r.ok)throw Error("Sin subtítulos");
  const track=document.createElement("track");track.kind="captions";track.label="Español";track.srclang="es";track.src="media/video-igualdad-equidad.vtt";$("userVideo").append(track);
- $("captionsAvailable").hidden=false;$("captionsMissing").hidden=true;
-}).catch(()=>{$("captionsAvailable").hidden=true;$("captionsMissing").hidden=false;});
+ if($("captionsAvailable"))$("captionsAvailable").hidden=false;if($("captionsMissing"))$("captionsMissing").hidden=true;
+}).catch(()=>{if($("captionsAvailable"))$("captionsAvailable").hidden=true;if($("captionsMissing"))$("captionsMissing").hidden=false;});
 const intro=$("localSignVideo");if(intro)fetch("media/lsc/00-bienvenida.mp4",{method:"HEAD"}).then(r=>{if(r.ok)intro.hidden=false;}).catch(()=>{});
 const lscModules=[
 ["01-presentacion","Presentación del acuerdo"],["02-enfoques","Enfoques de derechos"],["03-objetivos","Objetivos y principios"],["04-ejes","Cinco ejes estratégicos"],["05-plan-publico","Transformación de lo público"],["06-garantias","Garantías y participación"],["07-capacidad","Desarrollo de capacidades"],["08-diversidad","Diversidad y no discriminación"],["09-disposiciones","Disposiciones finales"],["10-constancias","Constancias y comunicaciones"]
@@ -131,6 +132,26 @@ for(const [file,title] of lscModules){
  v.src="media/lsc/"+file+".mp4";v.setAttribute("aria-label","Interpretación en Lengua de Señas Colombiana: "+title);card.append(v);
  const p=document.createElement("p");p.className="note";p.textContent="Contenido interpretado del acuerdo municipal. Verifica la versión publicada con la entidad.";card.append(p);list.append(card);
  }).catch(()=>{});
+}
+window.PortalNarration={
+  speak, stopSpeech,
+  getMode:()=>voiceMode,
+  isSpeaking:()=>speaking,
+  hasSpeech:()=>Boolean(synth)
+};
+for(const [btnId, mediaId] of [["playVideo","userVideo"],["playAudio","userAudio"]]){
+ const button=$(btnId),media=$(mediaId);
+ if(!button||!media)continue;
+ button.addEventListener("click",()=>{
+   stopSpeech();
+   const other=mediaId==="userVideo"?$("userAudio"):$("userVideo");
+   if(other&&!other.paused)other.pause();
+   media.scrollIntoView({block:"nearest",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+   const attempt=media.play();
+   if(attempt&&typeof attempt.catch==="function"){
+      attempt.catch(()=>{media.focus();const notice=$(mediaId==="userVideo"?"videoMissing":"audioMissing");if(notice){notice.textContent="No se inició la reproducción. Utiliza los controles nativos del reproductor o el enlace de descarga.";notice.hidden=false;}});
+   }
+ });
 }
 window.addEventListener("pagehide",()=>{if(synth)synth.cancel();});
 if(synth){updateVoices();if(typeof synth.addEventListener==="function")synth.addEventListener("voiceschanged",updateVoices);else synth.onvoiceschanged=updateVoices;}
