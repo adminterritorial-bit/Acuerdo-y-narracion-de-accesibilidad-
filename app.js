@@ -16,6 +16,7 @@ function updateVoices(){
  const select=$("voicePicker"); if(!select)return; const previous=select.value;
  select.replaceChildren();
  for(const v of foundVoices){const o=document.createElement("option");o.value=v.name+"|"+v.lang;o.textContent=v.name+" ("+v.lang+")"+(/google/i.test(v.name)?" · Google":"");select.append(o);}
+ if(!foundVoices.length){const o=document.createElement("option");o.value="system";o.textContent="Intentar la voz del sistema (es-CO)";select.append(o);}
  if(foundVoices.some(v=>v.name+"|"+v.lang===previous))select.value=previous;
  const available=foundVoices.filter(v=>latam.test(v.lang));const chosen=foundVoices.find(v=>v.name+"|"+v.lang===select.value);
  if(available.length){if(!speaking)sayStatus("Voz en español detectada: "+(chosen?chosen.name:available[0].name)+". Pulsa Probar voz o Escuchar un tema.");}
@@ -32,18 +33,17 @@ function chunks(input){
 function advance(version){
  if(!synth||!speaking||version!==speechVersion)return;
  if(partIndex>=speechParts.length){speaking=false;sayStatus("Lectura finalizada.");return;}
- const voice=chosenVoice();if(!voice){speaking=false;sayStatus("No hay voz compatible. Usa el audio disponible o tu lector de pantalla.");return;}
- const u=new SpeechSynthesisUtterance(speechParts[partIndex++]);u.voice=voice;u.lang=voice.lang;u.rate=Number($("speechRate")?.value||1);u.volume=1;u.pitch=1;
+ const voice=chosenVoice();
+ const u=new SpeechSynthesisUtterance(speechParts[partIndex++]);if(voice)u.voice=voice;u.lang=voice?voice.lang:"es-CO";u.rate=Number($("speechRate")?.value||1);u.volume=1;u.pitch=1;
  u.onend=()=>advance(version);
  u.onerror=e=>{if(version!==speechVersion||e.error==="canceled"||e.error==="interrupted")return;speaking=false;sayStatus("No se pudo reproducir la voz del navegador. Prueba otra voz o usa el audio explicativo.");};
  try{synth.speak(u);}catch(e){speaking=false;sayStatus("Este dispositivo no pudo iniciar la voz. Usa el audio explicativo.");}
 }
 function speak(text,label){
  if(!synth){sayStatus("La síntesis de voz no está disponible en este navegador.");return;}
- if(!chosenVoice()){updateVoices();sayStatus("Selecciona una voz en español disponible o utiliza el audio explicativo.");return;}
  stopSpeech();speechParts=chunks(text);partIndex=0;speaking=true;
  for(const id of ["userAudio","userVideo"]){const media=$(id);if(media&&!media.paused)media.pause();}
- sayStatus("Leyendo: "+label+" con "+chosenVoice().name+".");advance(speechVersion);
+ sayStatus("Leyendo: "+label+". "+(chosenVoice()?"Voz seleccionada: "+chosenVoice().name+".":"Se solicitará la voz del sistema en español colombiano; su acento depende del dispositivo."));advance(speechVersion);
 }
 $("tryVoice")?.addEventListener("click",()=>speak("Bienvenidas y bienvenidos. Esta página explica la política pública de discapacidad del municipio de San Pedro.","prueba de voz"));
 $("stopVoice")?.addEventListener("click",stopSpeech);
