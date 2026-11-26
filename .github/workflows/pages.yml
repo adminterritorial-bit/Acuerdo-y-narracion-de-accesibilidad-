@@ -28,7 +28,11 @@ jobs:
           test -s index.html
           grep -q 'lang="es-CO"' index.html
           grep -q 'id="lengua-senas"' index.html
-          grep -q 'id="humanAudio"' index.html
+          grep -q 'id="audioExp"' index.html
+          grep -q 'id="educVideo"' index.html
+          grep -q 'id="pdfDownload"' index.html
+          grep -q 'id="voicePicker"' index.html
+          test "$(grep -o 'class="page" aria-labelledby' index.html | wc -l)" -eq 25
           grep -q 'id="consultar"' index.html
           if grep -E 'audio_completo_preliminar|audios/pagina_[0-9]+' index.html; then
             echo "No publique la antigua voz sintetica"
