@@ -39,6 +39,9 @@ jobs:
             echo "No se debe publicar el audio robótico anterior"
             exit 1
           fi
+          python3 scripts/check_accessibility.py
+          node --check app.js
+          node --check pages.js
           mkdir -p _site
           rsync -a --exclude='.git' --exclude='_site' --exclude='*.zip' --exclude='*.md' --exclude='.github' ./ _site/
           touch _site/.nojekyll
