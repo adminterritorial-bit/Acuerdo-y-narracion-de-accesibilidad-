@@ -57,7 +57,7 @@
 @media(max-width:640px){.featured-grid,.quick-actions{grid-template-columns:1fr}.featured-document{grid-column:auto}.featured-card{padding:15px}.quick-action{min-height:61px}.compact-hero h1{font-size:1.85rem}.welcome-controls button{width:auto}}
 @media(prefers-reduced-motion:reduce){.featured-card,.quick-action{animation:none!important;transform:none!important;transition:none!important}}
 body.high-contrast .pdf-art{background:#222}body.high-contrast .quick-action:first-child{background:#222;color:#fff}body.high-contrast .welcome-controls .guide-main{background:#ffe66c;color:#111}
-</style><script src="pages.js" defer></script><script src="app.js" defer></script></head>
+</style><script src="pages.js" defer></script><script src="app.js" defer></script><script src="guide.js" defer></script></head>
 <body>
 <a class="skip" href="#contenido">Saltar al contenido principal</a>
 <a class="skip" href="#lengua-senas">Saltar al acceso en Lengua de Señas Colombiana</a>
@@ -86,6 +86,8 @@ body.high-contrast .pdf-art{background:#222}body.high-contrast .quick-action:fir
           Tu navegador no admite video HTML5. Usa el enlace de descarga.
         </video>
       </div>
+      <p id="captionsAvailable" class="note muted" hidden>Subtítulos en español disponibles en los controles del video.</p>
+      <p id="captionsMissing" class="note muted">Los subtítulos y la audiodescripción completa de este video todavía requieren revisión; la versión original puede consultarse sin modificaciones.</p>
       <p id="videoMissing" role="status" class="media-error" hidden>No se pudo acceder al video. Puedes intentar descargarlo con el enlace inferior.</p>
       <p class="featured-description">Un material visual que explica las barreras y las diferencias entre tratar igual y ofrecer apoyos adecuados.</p>
       <div class="featured-actions"><button type="button" id="playVideo" class="feature-action">Reproducir video</button><a class="feature-link" href="media/video-igualdad-equidad.mp4" download>Descargar MP4</a></div>
