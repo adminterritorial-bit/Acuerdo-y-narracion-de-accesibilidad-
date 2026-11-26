@@ -66,6 +66,26 @@ else:
     data = json.loads(js.split("window.ACUERDO_PAGES=",1)[1].rstrip().rstrip(";"))
     if len(data) != 25 or [p["n"] for p in data] != list(range(1,26)):
         errors.append("Los 25 folios deben estar ordenados")
+# Comprobar la jerarquía de la nueva portada y las acciones interactivas.
+card_positions=[html.find('id="video-card"'), html.find('id="audio-card"'), html.find('id="documento-card"')]
+if any(n<0 for n in card_positions) or card_positions != sorted(card_positions):
+    errors.append("La portada debe comenzar con video, audio y PDF en ese orden")
+if html.find('id="documento-card"') > html.find('id="lengua-senas"'):
+    errors.append("Los tres medios principales deben anteceder las secciones secundarias")
+if len(re.findall(r'class="quick-action"',html)) != 6:
+    errors.append("Deben existir seis accesos rápidos interactivos")
+for target in ("guideToggle","guideReplay","guideStop","playVideo","playAudio","readPDFAll"):
+    if f'id="{target}"' not in html:
+        errors.append("Control principal ausente: "+target)
+if 'src="guide.js" defer' not in html:
+    errors.append("Falta cargar el módulo de narración guiada")
+if not (ROOT / "guide.js").exists():
+    errors.append("Falta archivo guide.js")
+if 'prefers-reduced-motion:reduce' not in html and 'prefers-reduced-motion: reduce' not in html:
+    errors.append("Las animaciones deben respetar movimiento reducido")
+for file in ("media/acuerdo-original.pdf","media/audio-explicativo.mp3","media/video-igualdad-equidad.mp4"):
+    if not (ROOT/file).is_file() or (ROOT/file).stat().st_size == 0:
+        errors.append("Recurso multimedia ausente: "+file)
 if errors:
     print("\n".join("ERROR: "+x for x in errors))
     sys.exit(1)
